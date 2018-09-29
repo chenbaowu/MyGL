@@ -1,0 +1,4 @@
+include ':app'
+
+include ':supportlibs'
+project (':supportlibs').projectDir = new File('../MySupport/supportlibs/')
