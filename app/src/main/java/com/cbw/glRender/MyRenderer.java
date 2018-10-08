@@ -1,4 +1,4 @@
-package com.cbw.glManager;
+package com.cbw.glRender;
 
 import android.content.Context;
 import android.graphics.Bitmap;

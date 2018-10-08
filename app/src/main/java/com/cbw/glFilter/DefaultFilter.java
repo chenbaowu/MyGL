@@ -1,11 +1,11 @@
-package com.cbw.filter;
+package com.cbw.glFilter;
 
 import android.content.Context;
 import android.opengl.GLES20;
 import android.support.annotation.RawRes;
 
-import com.cbw.filter.base.AbstractFilter;
-import com.cbw.filter.base.GlUtil;
+import com.cbw.glFilter.base.AbstractFilter;
+import com.cbw.glFilter.base.GlUtil;
 
 import java.nio.FloatBuffer;
 

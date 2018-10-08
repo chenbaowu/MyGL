@@ -1,11 +1,11 @@
-package com.cbw.filter;
+package com.cbw.glFilter;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.opengl.Matrix;
 
-import com.cbw.filter.base.GlUtil;
+import com.cbw.glFilter.base.GlUtil;
 import com.cbw.mygl.R;
 
 import java.nio.FloatBuffer;

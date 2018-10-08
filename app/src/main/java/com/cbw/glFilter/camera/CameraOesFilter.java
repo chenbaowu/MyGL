@@ -1,15 +1,15 @@
-package com.cbw.filter.camera;
+package com.cbw.glFilter.camera;
 
 import android.content.Context;
 import android.opengl.GLES11Ext;
 
-import com.cbw.filter.DefaultFilter;
-import com.cbw.filter.base.GlUtil;
+import com.cbw.glFilter.DefaultFilter;
+import com.cbw.glFilter.base.GlUtil;
 
 import java.nio.FloatBuffer;
 
 
-public class CameraFilter extends DefaultFilter {
+public class CameraOesFilter extends DefaultFilter {
 
     private static final String vertexShaderCode =
             "attribute vec4 aPosition;\n" +
@@ -31,7 +31,7 @@ public class CameraFilter extends DefaultFilter {
                     "    gl_FragColor = texture2D(uTexture, textureCoord);\n" +
                     "}";
 
-    public CameraFilter(Context context) {
+    public CameraOesFilter(Context context) {
         super(context);
     }
 

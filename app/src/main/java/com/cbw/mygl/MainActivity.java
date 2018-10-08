@@ -4,7 +4,7 @@ import android.opengl.GLSurfaceView;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
-import com.cbw.glManager.MyRenderer;
+import com.cbw.glRender.MyRenderer;
 
 public class MainActivity extends AppCompatActivity {
 

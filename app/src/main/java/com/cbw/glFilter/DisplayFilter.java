@@ -1,4 +1,4 @@
-package com.cbw.filter;
+package com.cbw.glFilter;
 
 import android.content.Context;
 

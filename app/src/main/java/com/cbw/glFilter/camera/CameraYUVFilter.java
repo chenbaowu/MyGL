@@ -1,10 +1,10 @@
-package com.cbw.filter.camera;
+package com.cbw.glFilter.camera;
 
 import android.content.Context;
 import android.opengl.GLES20;
 
-import com.cbw.filter.DefaultFilter;
-import com.cbw.filter.base.GlUtil;
+import com.cbw.glFilter.DefaultFilter;
+import com.cbw.glFilter.base.GlUtil;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;

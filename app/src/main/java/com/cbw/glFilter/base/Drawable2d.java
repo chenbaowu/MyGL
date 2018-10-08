@@ -1,4 +1,4 @@
-package com.cbw.filter.base;
+package com.cbw.glFilter.base;
 /*
  * Copyright 2014 Google Inc. All rights reserved.
  *

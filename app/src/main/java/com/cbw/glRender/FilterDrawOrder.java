@@ -1,4 +1,4 @@
-package com.cbw.glManager;
+package com.cbw.glRender;
 
 /**
  * created by cbw on 2018/9/29

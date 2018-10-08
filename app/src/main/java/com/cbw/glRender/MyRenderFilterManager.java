@@ -1,16 +1,16 @@
-package com.cbw.glManager;
+package com.cbw.glRender;
 
 import android.content.Context;
 import android.graphics.Rect;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
-import com.cbw.filter.DisplayFilter;
-import com.cbw.filter.PicFilter;
-import com.cbw.filter.TriangleFilter;
-import com.cbw.filter.base.AbstractFilter;
-import com.cbw.filter.base.Drawable2d;
-import com.cbw.filter.base.GLFramebuffer;
+import com.cbw.glFilter.DisplayFilter;
+import com.cbw.glFilter.PicFilter;
+import com.cbw.glFilter.TriangleFilter;
+import com.cbw.glFilter.base.AbstractFilter;
+import com.cbw.glFilter.base.Drawable2d;
+import com.cbw.glFilter.base.GLFramebuffer;
 
 import java.nio.FloatBuffer;
 import java.util.HashMap;

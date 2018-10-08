@@ -1,4 +1,4 @@
-package com.cbw.filter.base;
+package com.cbw.glFilter.base;
 /*
  * Copyright 2014 Google Inc. All rights reserved.
  *
@@ -347,14 +347,6 @@ public class GlUtil {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
 
         return textureObjectIds[0];
-    }
-
-    public static int createIndexTexture(byte[] buffer) {
-        return createIndexTexture(256, 1, GLES20.GL_LINEAR, GLES20.GL_LINEAR, GLES20.GL_CLAMP_TO_EDGE, GLES20.GL_CLAMP_TO_EDGE, ByteBuffer.wrap(buffer));
-    }
-
-    public static int createIndexTexture(int width, int height, int minFilter, int magFilter, int wrapS, int wrapT, Buffer buffer) {
-        return createIndexTexture(width, height, minFilter, magFilter, wrapS, wrapT, GLES20.GL_LUMINANCE, buffer);
     }
 
     public static int createIndexTexture(int width, int height, int minFilter, int magFilter, int wrapS, int wrapT, int internalFormat, Buffer buffer) {

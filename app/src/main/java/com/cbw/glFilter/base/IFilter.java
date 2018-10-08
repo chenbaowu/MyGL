@@ -1,4 +1,4 @@
-package com.cbw.filter.base;
+package com.cbw.glFilter.base;
 
 import java.nio.FloatBuffer;
 
