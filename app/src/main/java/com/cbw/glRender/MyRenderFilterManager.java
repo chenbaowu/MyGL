@@ -1,18 +1,25 @@
 package com.cbw.glRender;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
+import android.util.Log;
 
+import com.cbw.glFilter.DefaultFilter;
 import com.cbw.glFilter.DisplayFilter;
 import com.cbw.glFilter.PicFilter;
 import com.cbw.glFilter.TriangleFilter;
 import com.cbw.glFilter.base.AbstractFilter;
 import com.cbw.glFilter.base.Drawable2d;
 import com.cbw.glFilter.base.GLFramebuffer;
+import com.cbw.glFilter.camera.CameraOesFilter;
+import com.cbw.utils.ImageUtil;
+import com.cbw.utils.PathUtil;
 
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,13 +58,24 @@ public class MyRenderFilterManager {
         mRecordRect = new Rect();
     }
 
+    private DefaultFilter mFinalFilter; // 最后把fbo的图像画到屏幕
+
     public void initFilter() {
+
+        mFinalFilter = new DefaultFilter(mContext);
 
         AbstractFilter filter = null;
 
         try {
-            filter = new DisplayFilter(mContext);
-            addToCache(FilterDrawOrder.FILTER_DISPLAY, filter);
+            filter = new TriangleFilter(mContext);
+            addToCache(FilterDrawOrder.FILTER_TRIANGLE, filter);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            filter = new CameraOesFilter(mContext);
+            addToCache(FilterDrawOrder.FILTER_OES, filter);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -70,8 +88,8 @@ public class MyRenderFilterManager {
         }
 
         try {
-            filter = new TriangleFilter(mContext);
-            addToCache(FilterDrawOrder.FILTER_TRIANGLE, filter);
+            filter = new DisplayFilter(mContext);
+            addToCache(FilterDrawOrder.FILTER_DISPLAY, filter);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -130,7 +148,7 @@ public class MyRenderFilterManager {
     }
 
     public void initGLFramebuffer() {
-        mGLFramebuffer = new GLFramebuffer(5, mSurfaceWidth, mSurfaceHeight);
+        mGLFramebuffer = new GLFramebuffer(5, mFrameBufferWidth, mFrameBufferHeight);
     }
 
     public void drawFrame(float[] mvpMatrix, int textureId, float[] texMatrix) {
@@ -138,54 +156,77 @@ public class MyRenderFilterManager {
                 mDrawable2d.getVertexStride(), texMatrix, mDrawable2d.getTexCoordArray(), textureId, mDrawable2d.getTexCoordStride());
     }
 
-    /**
-     * @param mvpMatrix
-     * @param vertexBuffer
-     * @param firstVertex
-     * @param vertexCount
-     * @param coordsPerVertex
-     * @param vertexStride
-     * @param texMatrix
-     * @param texBuffer
-     * @param textureId
-     * @param texStride
-     */
     private void onDraw(float[] mvpMatrix, FloatBuffer vertexBuffer, int firstVertex, int vertexCount, int coordsPerVertex,
                         int vertexStride, float[] texMatrix, FloatBuffer texBuffer, int textureId, int texStride) {
 
         // GLES20.glScissor(); // 裁剪
-        GLES20.glViewport(mDisplayRect.left, mDisplayRect.top, mDisplayRect.width(), mDisplayRect.height());
+        GLES20.glViewport(mFrameBufferRect.left, mFrameBufferRect.top, mFrameBufferRect.width(), mFrameBufferRect.height());
 
-        setFilterEnableByLayer(FilterDrawOrder.FILTER_PIC, true);
+        setFilterEnableByLayer(FilterDrawOrder.FILTER_OES, true);
         setFilterEnableByLayer(FilterDrawOrder.FILTER_TRIANGLE, false);
+        setFilterEnableByLayer(FilterDrawOrder.FILTER_PIC, false);
 
 //        getFilterByLayer(FilterDrawOrder.FILTER_TRIANGLE).onDraw(mvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, texMatrix, texBuffer, textureId, texStride);
 
+        mGLFramebuffer.bindNext(true);
+
         for (Map.Entry<Integer, AbstractFilter> entry : mAllFilterCache.entrySet()) {
+
             AbstractFilter filter = entry.getValue();
 
             if (filter == null || !filter.getFilterEnable()) {
                 continue;
             }
 
-            if (filter instanceof DisplayFilter) {
+            if (entry.getKey() == FilterDrawOrder.FILTER_OES) {
+                mTargetMatrix = texMatrix;
+            } else if (entry.getKey() == FilterDrawOrder.FILTER_DISPLAY) {
+                mTargetMatrix = mIdentityMatrix;
                 textureId = mGLFramebuffer.getCurrentTextureId();
-            } else {
                 mGLFramebuffer.bindNext(true);
+            } else {
+                mTargetMatrix = mIdentityMatrix;
             }
 
-//                blendEnable(true);
-            filter.onDraw(mvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, texMatrix, texBuffer, textureId, texStride);
-//                blendEnable(false);
-            mGLFramebuffer.unbind();
+            /*blendEnable(true);*/
+            filter.onDraw(mvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, mTargetMatrix, texBuffer, textureId, texStride);
+            /*blendEnable(false);*/
         }
+
+        if (saveFrame) {
+            saveFrame = false;
+            readPixels(mFrameBufferWidth, mFrameBufferHeight);
+        }
+        textureId = mGLFramebuffer.getCurrentTextureId();
+        mGLFramebuffer.unbind();
+        GLES20.glViewport(mDisplayRect.left, mDisplayRect.top, mDisplayRect.width(), mDisplayRect.height());
+        mFinalFilter.onDraw(mIdentityMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, mIdentityMatrix, texBuffer, textureId, texStride);
+
+    }
+
+    public boolean saveFrame;
+    private IntBuffer mReadBuf;
+
+    public void readPixels(int width, int height) {
+
+        long time = System.currentTimeMillis();
+        GLES20.glFinish(); // 等待渲染结束 解决某些机型录制闪屏、图像不完整问题 ，但是耗时
+        if (mReadBuf == null) {
+            mReadBuf = IntBuffer.allocate(width * height);
+        } else {
+            mReadBuf.rewind();
+        }
+        GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mReadBuf);
+        Log.i("bbb", "readPixels: " + (System.currentTimeMillis() - time));
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bitmap.copyPixelsFromBuffer(mReadBuf);
+        String path = PathUtil.GetAppPath(mContext) + "/gl.jpg";
+        ImageUtil.WriterBitmapToSd(path, bitmap, 100);
+        mReadBuf.clear();
     }
 
     private boolean mBlendEnable;
 
-    /**
-     * @param enable
-     */
     private void blendEnable(boolean enable) {
         if (enable == mBlendEnable) {
             return;
@@ -206,6 +247,12 @@ public class MyRenderFilterManager {
     public void release() {
 
         mContext = null;
+
+        if (mFinalFilter != null) {
+            mFinalFilter.releaseProgram();
+            mFinalFilter = null;
+        }
+
         if (mAllFilterCache != null) {
             for (Map.Entry<Integer, AbstractFilter> entry : mAllFilterCache.entrySet()) {
                 AbstractFilter filter = entry.getValue();
@@ -221,6 +268,5 @@ public class MyRenderFilterManager {
             mAllFilterCache.clear();
             mAllFilterCache = null;
         }
-
     }
 }

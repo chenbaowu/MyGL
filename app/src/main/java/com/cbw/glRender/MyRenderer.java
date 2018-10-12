@@ -1,16 +1,12 @@
 package com.cbw.glRender;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.opengl.GLES20;
+import android.graphics.SurfaceTexture;
+import android.opengl.GLES11Ext;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.os.Environment;
-import android.util.Log;
 
-import com.cbw.utils.ImageUtil;
-
-import java.nio.IntBuffer;
+import com.cbw.glFilter.base.GlUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -19,10 +15,12 @@ import javax.microedition.khronos.opengles.GL10;
  * created by cbw on 2018/9/27
  */
 
-public class MyRenderer implements GLSurfaceView.Renderer {
+public class MyRenderer implements GLSurfaceView.Renderer, IRenderer {
 
     private Context mContext;
     private MyRenderFilterManager myRenderFilterManager;
+    private SurfaceTexture mSurfaceTexture;
+    private int mTextureId;
 
     public MyRenderer(Context context) {
         mContext = context;
@@ -30,16 +28,20 @@ public class MyRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+        onSurfaceCreated();
+    }
 
-        myRenderFilterManager = new MyRenderFilterManager(mContext);
-
+    @Override
+    public void onSurfaceCreated() {
         initMatrix();
+        createSourceTexture();
+        myRenderFilterManager = new MyRenderFilterManager(mContext);
     }
 
     private float[] mProjectionMatrix;     // 投影矩阵
     private float[] mViewMatrix;           // 视觉矩阵
-    private float[] mViewProjectionMatrix; //
-    private float[] mSTMatrix;//surface texture matrix
+    private float[] mViewProjectionMatrix; // 视觉投影
+    private float[] mSTMatrix; // surface texture matrix
 
     private void initMatrix() {
 
@@ -52,12 +54,25 @@ public class MyRenderer implements GLSurfaceView.Renderer {
         Matrix.setIdentityM(mSTMatrix, 0);
     }
 
+    private void createSourceTexture() {
+        mTextureId = GlUtil.createTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES);
+        mSurfaceTexture = new SurfaceTexture(mTextureId);
+
+        if (mOnRenderListener != null) {
+            mOnRenderListener.onSurfaceCreated(mSurfaceTexture);
+        }
+    }
+
+    @Override
+    public void onSurfaceChanged(GL10 gl, int width, int height) {
+        onSurfaceChanged(width, height);
+    }
+
     private float mRenderScale = 1f;
     private int mSurfaceWidth, mSurfaceHeight;
 
     @Override
-    public void onSurfaceChanged(GL10 gl, int width, int height) {
-
+    public void onSurfaceChanged(int width, int height) {
         mSurfaceWidth = width;
         mSurfaceHeight = height;
 
@@ -128,37 +143,51 @@ public class MyRenderer implements GLSurfaceView.Renderer {
 
     @Override
     public void onDrawFrame(GL10 gl) {
+        onDrawFrame();
+    }
 
-        myRenderFilterManager.drawFrame(mViewProjectionMatrix, 0, mSTMatrix);
+    @Override
+    public void onDrawFrame() {
 
-//        GLES20.glFinish(); // 解决某些机型录制闪屏、图像不完整问题 ，但是耗时
-
-        if (mReadBuf == null) {
-//            readPixels(mSurfaceWidth, mSurfaceHeight);
+        try {
+            mSurfaceTexture.updateTexImage(); // 更新数据源，回调 onFrameAvailable
+            mSurfaceTexture.getTransformMatrix(mSTMatrix);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
+        myRenderFilterManager.drawFrame(mViewProjectionMatrix, mTextureId, mSTMatrix);
     }
 
-    private IntBuffer mReadBuf;
+    public MyRenderFilterManager getMyRenderFilterManager() {
+        return myRenderFilterManager;
+    }
 
-    private void readPixels(int width, int height) {
+    @Override
+    public void onSurfaceDestroyed() {
 
-        long time = System.currentTimeMillis();
-        if (mReadBuf == null) {
-            mReadBuf = IntBuffer.allocate(width * height);
+        if (myRenderFilterManager != null) {
+            myRenderFilterManager.release();
+            myRenderFilterManager = null;
         }
-        GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, mReadBuf);
-        Log.i("bbb", "readPixels: " + (System.currentTimeMillis() - time));
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        bitmap.copyPixelsFromBuffer(mReadBuf);
-        String path =  Environment.getExternalStorageDirectory().getAbsolutePath() + "/gl.jpg";
-        ImageUtil.WriterBitmapToSd(path, bitmap, 100);
-        mReadBuf.clear();
+
+        if (mSurfaceTexture != null) {
+            mSurfaceTexture.setOnFrameAvailableListener(null);
+            mSurfaceTexture.release(); // release方法必须在 "对应Thread" 内调用否则出现 "PreviewBufferQueue has been abandoned"错误
+            mSurfaceTexture = null;
+        }
+
+        if (mOnRenderListener != null) {
+            mOnRenderListener.onSurfaceDestroyed();
+        }
 
     }
 
-    public void onDestroy() {
-
-        mContext = null;
-        myRenderFilterManager.release();
+    @Override
+    public void setOnRenderListener(IRenderer.OnRenderListener listener) {
+        mOnRenderListener = listener;
     }
+
+    private OnRenderListener mOnRenderListener;
+
 }

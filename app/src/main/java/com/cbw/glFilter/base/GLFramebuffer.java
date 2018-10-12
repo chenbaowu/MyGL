@@ -159,6 +159,7 @@ public class GLFramebuffer {
 
     public boolean bindByIndex(int index, boolean clear) {
         index = checkIndex(index);
+        mCurrentTextureIndex = index;
 
         mHasBindFramebuffer = true;
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, mFrameBuffers[index]);

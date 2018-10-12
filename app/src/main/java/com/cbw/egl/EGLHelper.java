@@ -16,6 +16,7 @@ import javax.microedition.khronos.opengles.GL10;
  * c, 创建Surface
  * d, 创建Context
  * e, 指定当前的环境为绘制环境
+ * f, 交换前后缓冲，也就是将画面送显
  */
 
 public class EGLHelper {

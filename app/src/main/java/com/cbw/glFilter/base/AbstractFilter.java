@@ -11,7 +11,7 @@ public abstract class AbstractFilter implements IFilter {
     protected Context mContext;
     protected int mProgramHandle;
     protected float mRenderScale = 1.0f;
-    protected int mWidth, mHeight;
+    protected int mWidth, mHeight; // 注意传进来的是 surface的宽高，还是Framebuffer的
     protected boolean mInRecordDraw = false;
     protected boolean mFilterEnable = true;
     private GLFramebuffer mGLFramebuffer;
@@ -96,7 +96,7 @@ public abstract class AbstractFilter implements IFilter {
         GLES20.glUseProgram(mProgramHandle);
     }
 
-    protected int mDefaultTextureId;
+    protected int mDefaultTextureId = -1;
 
     protected void bindTexture(int textureId) {
         mDefaultTextureId = textureId;
@@ -128,6 +128,13 @@ public abstract class AbstractFilter implements IFilter {
 //        GLES20.glDeleteTextures(1, new int[]{mDefaultTextureId}, 0);
     }
 
+    protected void deleteTexture() {
+        if (mDefaultTextureId != -1) {
+            mDefaultTextureId = -1;
+            GLES20.glDeleteTextures(1, new int[]{mDefaultTextureId}, 0);
+        }
+    }
+
     protected void disuseProgram() {
         GLES20.glUseProgram(0);
     }
@@ -136,6 +143,7 @@ public abstract class AbstractFilter implements IFilter {
     public void releaseProgram() {
         mContext = null;
 
+        deleteTexture();
         GLES20.glDeleteProgram(mProgramHandle);
         mProgramHandle = -1;
     }
