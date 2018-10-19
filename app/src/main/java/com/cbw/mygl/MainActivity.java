@@ -19,7 +19,7 @@ import com.cbw.utils.OnAnimatorTouchListener;
 import com.cbw.utils.PathUtil;
 
 /**
- *  系统GLSurfaceView 和 自定义MyGLSurfaceView , MyGLTextureView
+ * 系统GLSurfaceView 和 自定义MyGLSurfaceView , MyGLTextureView
  */
 public class MainActivity extends AppCompatActivity implements Choreographer.FrameCallback {
 
@@ -46,10 +46,18 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
         BaseVideoInfo baseVideoInfo = mediaPlayerHelper.getVideoInfo(path);
         mediaPlayerHelper.setDataSource(path);
 
-        if(baseVideoInfo != null){
-           FrameLayout frameLayout =  findViewById(R.id.GL);
-           frameLayout.getLayoutParams().width = baseVideoInfo.width;
-           frameLayout.getLayoutParams().height = baseVideoInfo.height;
+        if (baseVideoInfo != null) {
+            FrameLayout frameLayout = findViewById(R.id.GL);
+            int w, h;
+            if (baseVideoInfo.rotation % 180 == 0) { // 竖拍
+                w = 1080;
+                h = baseVideoInfo.width / baseVideoInfo.height * w;
+            } else {
+                w = 1080;
+                h = baseVideoInfo.height / baseVideoInfo.width * w;
+            }
+            frameLayout.getLayoutParams().width = w;
+            frameLayout.getLayoutParams().height = h;
         }
 
         myRenderer = new MyRenderer(this);
