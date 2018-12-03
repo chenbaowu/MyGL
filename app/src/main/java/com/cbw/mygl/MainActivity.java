@@ -20,6 +20,7 @@ import com.cbw.utils.PathUtil;
 
 /**
  * 系统GLSurfaceView 和 自定义MyGLSurfaceView , MyGLTextureView
+ * 3种渲染对比，{@link #init()}初始化改变可见
  */
 public class MainActivity extends AppCompatActivity implements Choreographer.FrameCallback {
 
@@ -48,33 +49,36 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
 
         if (baseVideoInfo != null) {
             FrameLayout frameLayout = findViewById(R.id.GL);
-            int w, h;
+            float w, h;
             if (baseVideoInfo.rotation % 180 == 0) { // 竖拍
                 w = 1080;
-                h = baseVideoInfo.width / baseVideoInfo.height * w;
+                h = baseVideoInfo.width * 1.0f / baseVideoInfo.height * w;
             } else {
                 w = 1080;
-                h = baseVideoInfo.height / baseVideoInfo.width * w;
+                h = baseVideoInfo.height * 1.0f/ baseVideoInfo.width * w;
             }
-            frameLayout.getLayoutParams().width = w;
-            frameLayout.getLayoutParams().height = h;
+            frameLayout.getLayoutParams().width = (int) w;
+            frameLayout.getLayoutParams().height = (int) h;
         }
 
         myRenderer = new MyRenderer(this);
         myRenderer.setOnRenderListener(mOnRenderListener);
 
-        mGLSurfaceView = findViewById(R.id.GLSurfaceView);
-        mGLSurfaceView.setEGLContextClientVersion(2);
-        mGLSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
-        mGLSurfaceView.setPreserveEGLContextOnPause(true);
-        mGLSurfaceView.setRenderer(myRenderer);
-        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+//        mGLSurfaceView = findViewById(R.id.GLSurfaceView);
+//        mGLSurfaceView.setVisibility(View.VISIBLE);
+//        mGLSurfaceView.setEGLContextClientVersion(2);
+//        mGLSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
+//        mGLSurfaceView.setPreserveEGLContextOnPause(true);
+//        mGLSurfaceView.setRenderer(myRenderer);
+//        mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
         mMyGLSurfaceView = findViewById(R.id.MyGLSurfaceView);
+        mMyGLSurfaceView.setVisibility(View.VISIBLE);
         mMyGLSurfaceView.setPreserveEGLContextOnPause(true);
         mMyGLSurfaceView.setRenderer(myRenderer);
 
-        myGLTextureView = findViewById(R.id.MyGLTextureView);
+//        myGLTextureView = findViewById(R.id.MyGLTextureView);
+//        myGLTextureView.setVisibility(View.VISIBLE);
 //        myGLTextureView.setRenderer(myRenderer);
 
         tv_op = findViewById(R.id.tv_op);
@@ -85,16 +89,15 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
         @Override
         public void onSurfaceCreated(SurfaceTexture surfaceTexture) {
 
-            surfaceTexture.setOnFrameAvailableListener(new SurfaceTexture.OnFrameAvailableListener() {
-                @Override
-                public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-                    mGLSurfaceView.requestRender();
-                    myGLTextureView.requestRender();
-                    mMyGLSurfaceView.requestRender();
-                }
-            });
-
-//            surfaceTexture.setOnFrameAvailableListener(mMyGLSurfaceView);
+            if (mGLSurfaceView != null) {
+                surfaceTexture.setOnFrameAvailableListener(mGLSurfaceView);
+            }
+            if (mMyGLSurfaceView != null) {
+                surfaceTexture.setOnFrameAvailableListener(mMyGLSurfaceView);
+            }
+            if (myGLTextureView != null) {
+                surfaceTexture.setOnFrameAvailableListener(myGLTextureView);
+            }
 
             mediaPlayerHelper.setSurface(new Surface(surfaceTexture));
             if (isPause) {
@@ -117,13 +120,30 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
         public void onActionClick(View v) {
             mediaPlayerHelper.start(true);
 
-            mGLSurfaceView.queueEvent(new Runnable() {
-                @Override
-                public void run() {
-                    myRenderer.getMyRenderFilterManager().saveFrame = true;
-                }
-            });
-
+            if (mGLSurfaceView != null) {
+                mGLSurfaceView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        myRenderer.getMyRenderFilterManager().saveFrame = true;
+                    }
+                });
+            }
+            if (mMyGLSurfaceView != null) {
+                mMyGLSurfaceView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        myRenderer.getMyRenderFilterManager().saveFrame = true;
+                    }
+                });
+            }
+            if (myGLTextureView != null) {
+                myGLTextureView.queueEvent(new Runnable() {
+                    @Override
+                    public void run() {
+                        myRenderer.getMyRenderFilterManager().saveFrame = true;
+                    }
+                });
+            }
         }
     };
 
@@ -131,13 +151,17 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
     protected void onPause() {
         super.onPause();
         mediaPlayerHelper.pause();
-        mGLSurfaceView.onPause();
+        if (mGLSurfaceView != null) {
+            mGLSurfaceView.onPause();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mGLSurfaceView.onResume();
+        if (mGLSurfaceView != null) {
+            mGLSurfaceView.onResume();
+        }
 //        Choreographer.getInstance().postFrameCallback(this); // post一次回调一次
     }
 
@@ -155,8 +179,12 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
     public void doFrame(long frameTimeNanos) {
 
 //        Log.i("bbb", "doFrame: " + frameTimeNanos);
-        mGLSurfaceView.requestRender();
-        mMyGLSurfaceView.requestRender();
+        if (mGLSurfaceView != null && mGLSurfaceView.getRenderMode() == GLSurfaceView.RENDERMODE_WHEN_DIRTY) {
+            mGLSurfaceView.requestRender();
+        }
+        if (mMyGLSurfaceView != null) {
+            mMyGLSurfaceView.requestRender();
+        }
 
         Choreographer.getInstance().postFrameCallback(this);
     }

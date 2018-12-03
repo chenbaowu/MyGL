@@ -21,7 +21,7 @@
             android:id="@+id/MyGLSurfaceView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="visible" />
+            android:visibility="gone" />
 
         <com.cbw.glRender.MyGLTextureView
             android:id="@+id/MyGLTextureView"

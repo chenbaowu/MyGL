@@ -40,7 +40,8 @@ public class MyRenderFilterManager {
     private GLFramebuffer mGLFramebuffer;
 
     private float[] mIdentityMatrix;
-    private float[] mTargetMatrix;
+    private float[] mTargetMvpMatrix;
+    private float[] mTargettTexMatrix;
     private Rect mDisplayRect;
     private Rect mFrameBufferRect;
     private Rect mRecordRect;
@@ -134,7 +135,6 @@ public class MyRenderFilterManager {
 
         mDisplayRect.set(0, 0, mSurfaceWidth, mSurfaceHeight);
         mFrameBufferRect.set(0, 0, mFrameBufferWidth, mFrameBufferHeight);
-        GLES20.glViewport(mFrameBufferRect.left, mFrameBufferRect.top, mFrameBufferRect.right, mFrameBufferRect.bottom);
 
         if (mAllFilterCache != null) {
             for (Map.Entry<Integer, AbstractFilter> entry : mAllFilterCache.entrySet()) {
@@ -144,6 +144,11 @@ public class MyRenderFilterManager {
                     filter.setViewSize(mFrameBufferWidth, mFrameBufferHeight);
                 }
             }
+        }
+
+        if(mFinalFilter != null){
+            mFinalFilter.setRenderScale(mRenderScale);
+            mFinalFilter.setViewSize(mFrameBufferWidth,mFrameBufferHeight);
         }
     }
 
@@ -156,6 +161,18 @@ public class MyRenderFilterManager {
                 mDrawable2d.getVertexStride(), texMatrix, mDrawable2d.getTexCoordArray(), textureId, mDrawable2d.getTexCoordStride());
     }
 
+    /**
+     * @param mvpMatrix
+     * @param vertexBuffer
+     * @param firstVertex
+     * @param vertexCount
+     * @param coordsPerVertex
+     * @param vertexStride
+     * @param texMatrix
+     * @param texBuffer
+     * @param textureId
+     * @param texStride
+     */
     private void onDraw(float[] mvpMatrix, FloatBuffer vertexBuffer, int firstVertex, int vertexCount, int coordsPerVertex,
                         int vertexStride, float[] texMatrix, FloatBuffer texBuffer, int textureId, int texStride) {
 
@@ -164,11 +181,10 @@ public class MyRenderFilterManager {
 
         setFilterEnableByLayer(FilterDrawOrder.FILTER_OES, true);
         setFilterEnableByLayer(FilterDrawOrder.FILTER_TRIANGLE, false);
-        setFilterEnableByLayer(FilterDrawOrder.FILTER_PIC, false);
+        setFilterEnableByLayer(FilterDrawOrder.FILTER_PIC, true);
 
-//        getFilterByLayer(FilterDrawOrder.FILTER_TRIANGLE).onDraw(mvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, texMatrix, texBuffer, textureId, texStride);
 
-        mGLFramebuffer.bindNext(true);
+//        getFilterByLayer(FilterDrawOrder.FILTER_TRIANGLE).onDraw(mIdentityMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, mIdentityMatrix, texBuffer, textureId, texStride);
 
         for (Map.Entry<Integer, AbstractFilter> entry : mAllFilterCache.entrySet()) {
 
@@ -178,18 +194,23 @@ public class MyRenderFilterManager {
                 continue;
             }
 
+            /* 第一个filter校正方向（即纹理矩阵），最后一个filter校正变形（即顶点矩阵）*/
             if (entry.getKey() == FilterDrawOrder.FILTER_OES) {
-                mTargetMatrix = texMatrix;
+                mGLFramebuffer.bindNext(true);
+                mTargetMvpMatrix = mIdentityMatrix;
+                mTargettTexMatrix = texMatrix;
             } else if (entry.getKey() == FilterDrawOrder.FILTER_DISPLAY) {
-                mTargetMatrix = mIdentityMatrix;
+                mTargetMvpMatrix = mvpMatrix;
+                mTargettTexMatrix = mIdentityMatrix;
                 textureId = mGLFramebuffer.getCurrentTextureId();
                 mGLFramebuffer.bindNext(true);
             } else {
-                mTargetMatrix = mIdentityMatrix;
+                mTargetMvpMatrix = mIdentityMatrix;
+                mTargettTexMatrix = mIdentityMatrix;
             }
 
             /*blendEnable(true);*/
-            filter.onDraw(mvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, mTargetMatrix, texBuffer, textureId, texStride);
+            filter.onDraw(mTargetMvpMatrix, vertexBuffer, firstVertex, vertexCount, coordsPerVertex, vertexStride, mTargettTexMatrix, texBuffer, textureId, texStride);
             /*blendEnable(false);*/
         }
 
@@ -237,7 +258,6 @@ public class MyRenderFilterManager {
             GLES20.glEnable(GLES20.GL_BLEND);
             GLES20.glBlendEquation(GLES20.GL_FUNC_ADD);
             GLES20.glBlendFuncSeparate(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA, GLES20.GL_ONE, GLES20.GL_ONE);
-
         } else {
             GLES20.glDisable(GLES20.GL_BLEND);
             GLES20.glDepthMask(true);

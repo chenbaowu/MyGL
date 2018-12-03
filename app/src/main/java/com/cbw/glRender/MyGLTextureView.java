@@ -8,7 +8,7 @@ import android.view.TextureView;
 /**
  * Created by cbw on 2018/10/12.
  */
-public class MyGLTextureView extends TextureView implements TextureView.SurfaceTextureListener {
+public class MyGLTextureView extends TextureView implements TextureView.SurfaceTextureListener, SurfaceTexture.OnFrameAvailableListener {
 
     private GLThread mGLThread;
     private IRenderer mRenderer;
@@ -23,7 +23,7 @@ public class MyGLTextureView extends TextureView implements TextureView.SurfaceT
         init();
     }
 
-    private void init(){
+    private void init() {
         setSurfaceTextureListener(this);
     }
 
@@ -75,6 +75,16 @@ public class MyGLTextureView extends TextureView implements TextureView.SurfaceT
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
+    }
+
+    /**
+     * @param surfaceTexture
+     * @see SurfaceTexture#updateTexImage()
+     * @see SurfaceTexture#setOnFrameAvailableListener
+     */
+    @Override
+    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+        requestRender();
     }
 
     public void requestRender() {

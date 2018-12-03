@@ -38,6 +38,9 @@ public class MyGLSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
     public void setPreserveEGLContextOnPause(boolean preserveOnPause) {
         mPreserveEGLContextOnPause = preserveOnPause;
+        if(mGLThread != null){
+            mGLThread.setPreserveEGLContextOnPause(mPreserveEGLContextOnPause);
+        }
     }
 
     public boolean getPreserveEGLContextOnPause() {
@@ -65,8 +68,6 @@ public class MyGLSurfaceView extends SurfaceView implements SurfaceHolder.Callba
         mDetached = true;
         super.onDetachedFromWindow();
     }
-
-    private boolean mWaitingForSurface = false;
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
