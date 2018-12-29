@@ -26,6 +26,8 @@
         android:name="android.hardware.camera.autofocus"
         android:required="false" />
 
+    <uses-permission android:name="com.cbw.support.data"/>
+
     <application
         android:allowBackup="true"
         android:hardwareAccelerated="true"
@@ -37,11 +39,23 @@
         tools:ignore="GoogleAppIndexingWarning">
         <activity
             android:name=".MainActivity"
+            android:exported="true"
             android:theme="@style/ActivityTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="gl.goto"
+                    android:scheme="cbw" />
             </intent-filter>
         </activity>
     </application>

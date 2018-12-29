@@ -2,13 +2,13 @@ package com.cbw.mygl;
 
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Choreographer;
 import android.view.Surface;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.cbw.base.BaseActivity;
 import com.cbw.bean.BaseVideoInfo;
 import com.cbw.glRender.GLSurfaceView;
 import com.cbw.glRender.MyGLSurfaceView;
@@ -17,18 +17,19 @@ import com.cbw.glRender.MyRenderer;
 import com.cbw.player.MediaPlayerHelper;
 import com.cbw.utils.OnAnimatorTouchListener;
 import com.cbw.utils.PathUtil;
+import com.cbw.utils.PercentUtil;
+import com.cbw.utils.ShareData;
 
 /**
  * 系统GLSurfaceView 和 自定义MyGLSurfaceView , MyGLTextureView
  * 3种渲染对比，{@link #init()}初始化改变可见
  */
-public class MainActivity extends AppCompatActivity implements Choreographer.FrameCallback {
+public class MainActivity extends BaseActivity implements Choreographer.FrameCallback {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         init();
     }
 
@@ -55,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
                 h = baseVideoInfo.width * 1.0f / baseVideoInfo.height * w;
             } else {
                 w = 1080;
-                h = baseVideoInfo.height * 1.0f/ baseVideoInfo.width * w;
+                h = baseVideoInfo.height * 1.0f / baseVideoInfo.width * w;
             }
             frameLayout.getLayoutParams().width = (int) w;
             frameLayout.getLayoutParams().height = (int) h;
@@ -105,6 +106,18 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
             }
             mediaPlayerHelper.start(true);
             isPause = true;
+
+            RenderHelper mRenderHelper = new RenderHelper();
+            mRenderHelper.analyseDeviceInfo();
+            mRenderHelper.analyseGPUInfo();
+            mRenderScale = mRenderHelper.calculateRenderSizeScale(ShareData.m_screenRealWidth, ShareData.m_screenHeight - PercentUtil.HeightPxxToPercent2(1920 - 1223));
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    tv_op.setText(mRenderScale + "");
+                }
+            });
         }
 
         @Override
@@ -113,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements Choreographer.Fra
         }
     };
 
+    private float mRenderScale = 1f;
     private boolean isPause = false;
 
     OnAnimatorTouchListener animatorTouchListener = new OnAnimatorTouchListener() {
